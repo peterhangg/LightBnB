@@ -1,13 +1,6 @@
 const properties = require('./json/properties.json');
 const users = require('./json/users.json');
-const { Pool } = require('pg');
-
-const pool = new Pool({
-  user: 'vagrant',
-  password: '123',
-  host: 'localhost',
-  database: 'lightbnb'
-});
+const db = require('./db/index.js');
 
 /// Users
 
@@ -19,7 +12,7 @@ const pool = new Pool({
 const getUserWithEmail = function(email) {
   // console.log('This is the email entered:',email);
   const queryString = `SELECT * FROM users WHERE email = $1;`
-  return pool.query(queryString,[email])
+  return db.query(queryString,[email])
   .then(res => {
     if(res) {
       console.log(res.rows);
@@ -28,11 +21,6 @@ const getUserWithEmail = function(email) {
       return null;
     }
   }).catch(err => console.error('query error', err.stack));
-    // let user;
-  // for (const userId in users) {
-  //   user = users[userId];
-  //   if (user.email.toLowerCase() === email.toLowerCase()) {
-  //     break;
 }
 exports.getUserWithEmail = getUserWithEmail;
 
@@ -43,15 +31,15 @@ exports.getUserWithEmail = getUserWithEmail;
  */
 const getUserWithId = function(id) {
   const queryString = `SELECT * FROM users WHERE id = $1;`
-  return pool.query(queryString,[id])
-  .then(res => {
-    if(res) {
-      console.log(id);
-      return res.rows[0];
-    } else {
-      return null;
-    }
-  }).catch(err => console.error('query error', err.stack));
+  return db.query(queryString,[id])
+    .then(res => {
+      if(res) {
+        console.log(id);
+        return res.rows[0];
+      } else {
+        return null;
+      }
+    }).catch(err => console.error('query error', err.stack));
 }
 exports.getUserWithId = getUserWithId;
 
@@ -66,16 +54,13 @@ const addUser =  function(user) {
     INSERT INTO users(name, email, password)
     VALUES($1, $2, $3)
     RETURNING *;`;
-  return pool.query(queryString, [user.name, user.email, user.password])
-  .then(res => {
-    res.rows
-    console.log(user);
-  })
-  .catch(err => console.error('query error', err.stack));
-  // const userId = Object.keys(users).length + 1;
-  // user.id = userId;
-  // users[userId] = user;
-  // return Promise.resolve(user);
+
+  return db.query(queryString, [user.name, user.email, user.password])
+    .then(res => {
+      res.rows
+      console.log(user);
+    })
+    .catch(err => console.error('query error', err.stack));
 }
 exports.addUser = addUser;
 
@@ -98,7 +83,7 @@ const getAllReservations = function(guest_id, limit = 10) {
     ORDER BY reservations.start_date
     LIMIT $2;
   `;
-  return pool.query(queryString, [guest_id, limit])
+  return db.query(queryString, [guest_id, limit])
     .then(res => {
       console.log(res.rows)
       return res.rows;
@@ -120,10 +105,10 @@ const getAllProperties = function(options, limit = 10) {
   const queryParams = [];
   // 2
   let queryString = `
-  SELECT properties.*, avg(property_reviews.rating) as average_rating
-  FROM properties
-  LEFT JOIN property_reviews ON properties.id = property_id
-  `;
+    SELECT properties.*, avg(property_reviews.rating) as average_rating
+    FROM properties
+    LEFT JOIN property_reviews ON properties.id = property_id
+    `;
 
   let parmasCheck = false;
   // 3
@@ -173,14 +158,9 @@ const getAllProperties = function(options, limit = 10) {
   console.log(queryString, queryParams);
 
    // 6
-  return pool.query(queryString, queryParams)
+  return db.query(queryString, queryParams)
     .then(res => res.rows)
     .catch(err => console.error('query error', err.stack));
-  // const queryString = ` SELECT * FROM properties LIMIT $1;`
-  // return pool.query(queryString,[limit])
-  //   .then(res => {
-  //     return res.rows;
-  //   });
 }
 exports.getAllProperties = getAllProperties;
 
@@ -201,15 +181,10 @@ const addProperty = function(property) {
     property.street, property.city, property.province, property.post_code, property.country, property.parking_spaces, property.number_of_bathrooms,
     property.number_of_bathrooms];
 
-  return pool.query(queryString, queryVar)
+  return db.query(queryString, queryVar)
     .then(res => {
       console.log(property)
       return res.rows})
     .catch(err => console.error('query error', err.stack));
-
-  // const propertyId = Object.keys(properties).length + 1;
-  // property.id = propertyId;
-  // properties[propertyId] = property;
-  // return Promise.resolve(property);
 }
 exports.addProperty = addProperty;
